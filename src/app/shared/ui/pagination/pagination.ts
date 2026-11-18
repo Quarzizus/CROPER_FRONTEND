@@ -48,12 +48,13 @@ export function pageWindow(page: number, totalPages: number, size = 5): readonly
           Filas
           <select
             class="border-input bg-card focus-visible:ring-ring h-8 rounded-md border px-2 text-sm outline-none focus-visible:ring-2"
-            [value]="pageSize()"
             [disabled]="busy()"
             (change)="onPageSize($event)"
           >
             @for (option of pageSizeOptions(); track option) {
-              <option [value]="option">{{ option }}</option>
+              <!-- Se marca la opción, no el select: el binding value del select se
+                   aplica antes de que existan las opciones. -->
+              <option [value]="option" [selected]="option === pageSize()">{{ option }}</option>
             }
           </select>
         </label>

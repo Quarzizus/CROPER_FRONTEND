@@ -6,7 +6,12 @@ import { BrnSonnerToaster } from '@spartan-ng/brain/sonner';
   selector: 'app-toaster',
   imports: [BrnSonnerToaster],
   template: `
-    <brn-sonner-toaster position="top-right" [richColors]="true" [closeButton]="true" />
+    <brn-sonner-toaster
+      position="top-right"
+      offset="4.5rem"
+      [richColors]="true"
+      [closeButton]="true"
+    />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
