@@ -125,3 +125,11 @@ export function isAppError(value: unknown): value is AppError {
     'fieldErrors' in value
   );
 }
+
+/**
+ * Normaliza cualquier `catch` a `AppError`. El interceptor ya entrega AppError;
+ * esto cubre lo que se lance fuera de una petición HTTP.
+ */
+export function asAppError(value: unknown): AppError {
+  return isAppError(value) ? value : unknownAppError();
+}

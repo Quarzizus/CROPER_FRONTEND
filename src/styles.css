@@ -124,3 +124,14 @@
     outline-offset: 2px;
   }
 }
+
+/* Overlay de diálogos: el panel lo dimensiona cada componente; el fondo se
+   oscurece y desenfoca para separar la decisión del contenido de la página. */
+.app-dialog-backdrop {
+  background-color: oklch(0 0 0 / 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.cdk-overlay-pane.app-dialog-panel {
+  max-width: none;
+}
