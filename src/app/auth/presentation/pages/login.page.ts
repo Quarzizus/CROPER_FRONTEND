@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
   NonNullableFormBuilder,
   ReactiveFormsModule,
@@ -7,7 +7,7 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideBoxes, lucideLoaderCircle } from '@ng-icons/lucide';
+import { lucideArrowRight, lucideBoxes, lucideLoaderCircle } from '@ng-icons/lucide';
 import { SessionStore } from '../../application/session.store';
 import {
   validateEmail,
@@ -19,6 +19,7 @@ import { Notifier } from '../../../core/notifications/notifier';
 import { ButtonDirective } from '../../../shared/ui/button/button.directive';
 import { Field } from '../../../shared/ui/field/field';
 import { InputDirective } from '../../../shared/ui/input/input.directive';
+import { CatalogScene } from '../components/catalog-scene';
 
 type AuthMode = 'login' | 'register';
 
@@ -27,68 +28,94 @@ const INVALID_CREDENTIALS = 'Email o contraseña incorrectos.';
 
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule, NgIcon, ButtonDirective, Field, InputDirective],
-  viewProviders: [provideIcons({ lucideBoxes, lucideLoaderCircle })],
+  imports: [
+    ReactiveFormsModule,
+    NgIcon,
+    ButtonDirective,
+    Field,
+    InputDirective,
+    CatalogScene,
+  ],
+  viewProviders: [
+    provideIcons({ lucideArrowRight, lucideBoxes, lucideLoaderCircle }),
+  ],
   template: `
-    <div class="grid items-center gap-10 lg:min-h-[calc(100dvh-8rem)] lg:grid-cols-[1.05fr_minmax(0,26rem)] lg:gap-20">
-      <!-- Panel de marca: el catálogo se presenta como un libro de inventario. -->
-      <section class="hidden lg:block" aria-hidden="true">
-        <p class="text-primary text-xs font-semibold tracking-[0.18em] uppercase">Gestión de catálogo</p>
-        <h1 class="mt-4 text-4xl font-semibold tracking-tight text-balance">
-          Un catálogo que se lee de un vistazo.
-        </h1>
-        <p class="text-muted-foreground mt-4 max-w-md text-base">
-          Alta, edición y baja de productos con paginación, búsqueda por página y confirmación
-          antes de borrar. El estado vive en la URL, así que compartir una vista es copiar el
-          enlace.
-        </p>
+    <div class="lg:grid lg:min-h-dvh lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
+      <!-- Hero: el almacén en 3D da contexto al catálogo. -->
+      <section
+        class="relative flex min-h-[19rem] flex-col justify-between overflow-hidden px-6 py-7 text-white sm:min-h-[21rem] sm:px-8 sm:py-8 lg:min-h-dvh lg:px-14 lg:py-12"
+      >
+        <div
+          class="pointer-events-none absolute inset-0 bg-[radial-gradient(115%_90%_at_15%_0%,#16543f_0%,#0a2c23_48%,#061a15_100%)]"
+        ></div>
+        <app-catalog-scene class="pointer-events-none absolute inset-0 opacity-75 lg:opacity-95" />
+        <!-- Scrims: oscurecen donde vive el texto y dejan respirar el almacén. -->
+        <div
+          class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(4,18,15,0.92)_0%,rgba(4,18,15,0.34)_36%,transparent_64%)]"
+        ></div>
+        <div
+          class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(4,18,15,0.82)_0%,rgba(4,18,15,0.42)_42%,transparent_72%)]"
+        ></div>
+        <div
+          class="pointer-events-none absolute inset-0 bg-[radial-gradient(140%_110%_at_35%_6%,transparent_58%,rgba(3,15,12,0.38)_100%)]"
+        ></div>
 
-        <div class="border-border/70 mt-10 max-w-md overflow-hidden rounded-xl border bg-card/60">
-          <div class="text-muted-foreground grid grid-cols-[7rem_1fr_auto] gap-4 border-b px-4 py-2 font-mono text-[11px] tracking-wider uppercase">
-            <span>SKU</span>
-            <span>Producto</span>
-            <span>Precio</span>
-          </div>
-          @for (row of ledger; track row.sku) {
-            <div class="grid grid-cols-[7rem_1fr_auto] items-baseline gap-4 px-4 py-3 text-sm">
-              <span class="text-primary font-mono text-xs font-medium">{{ row.sku }}</span>
-              <span class="truncate">{{ row.name }}</span>
-              <span class="text-muted-foreground font-mono text-xs tabular-nums">{{ row.price }}</span>
-            </div>
-          }
+        <div class="relative z-10 flex items-center gap-3">
+          <span
+            class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15 backdrop-blur-sm"
+          >
+            <ng-icon name="lucideBoxes" size="1.1rem" />
+          </span>
+          <span class="text-sm font-semibold tracking-tight">Catálogo de productos</span>
         </div>
+
+        <div class="relative z-10 mt-12 lg:mt-0">
+          <p class="text-[11px] font-semibold tracking-[0.2em] text-emerald-200/75 uppercase">
+            Inventario
+          </p>
+          <h1
+            class="mt-3 max-w-md text-[1.75rem] leading-tight font-semibold tracking-tight text-balance sm:text-4xl lg:text-[2.7rem] lg:leading-[1.08]"
+          >
+            Cada producto, en su sitio.
+          </h1>
+          <p class="mt-3 max-w-sm text-sm leading-relaxed text-white/75 lg:mt-4 lg:text-base">
+            Alta, edición y baja con paginación, confirmación antes de borrar y el estado en la
+            URL.
+          </p>
+          <p
+            class="mt-8 hidden font-mono text-[11px] tracking-[0.22em] text-white/45 uppercase lg:block"
+          >
+            SKU · Precio · Stock · Estado
+          </p>
+        </div>
+
+        <div class="relative z-10 hidden lg:block" aria-hidden="true"></div>
       </section>
 
-      <section class="mx-auto w-full max-w-md">
-        <div class="mb-8 flex items-center gap-3 lg:hidden">
-          <span class="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-xl">
-            <ng-icon name="lucideBoxes" size="1.25rem" />
-          </span>
-          <span class="font-semibold tracking-tight">Catálogo de productos</span>
-        </div>
-
-        <div class="bg-card rounded-2xl border p-6 shadow-sm sm:p-8">
-          <h2 class="text-xl font-semibold tracking-tight">
-            @if (mode() === 'login') {
-              Ingresa a tu catálogo
-            } @else {
-              Crea tu cuenta
-            }
+      <!-- Formulario: hoja que se superpone al hero en móvil. -->
+      <main
+        class="bg-background relative z-10 -mt-7 rounded-t-[1.75rem] px-5 pt-9 pb-12 shadow-[0_-12px_32px_-16px_rgba(0,0,0,0.45)] sm:px-8 lg:mt-0 lg:flex lg:items-center lg:justify-center lg:rounded-none lg:px-14 lg:py-16 lg:shadow-none"
+      >
+        <div class="mx-auto w-full max-w-[25rem]">
+          <h2 class="text-2xl font-semibold tracking-tight">
+            {{ mode() === 'login' ? 'Ingresa a tu catálogo' : 'Crea tu cuenta' }}
           </h2>
-          <p class="text-muted-foreground mt-1 text-sm">
+          <p class="text-muted-foreground mt-2 text-sm leading-relaxed">
             @if (mode() === 'login') {
               Usa las credenciales de tu cuenta para continuar.
             } @else {
-              Necesitas al menos 10 caracteres de contraseña.
+              Elige un email y una contraseña de al menos 10 caracteres.
             }
           </p>
 
-          <div class="bg-muted mt-6 grid grid-cols-2 gap-1 rounded-lg p-1" role="group" aria-label="Modo de acceso">
+          <div class="bg-muted mt-8 grid grid-cols-2 gap-1 rounded-xl p-1" role="group" aria-label="Modo de acceso">
             <button
               type="button"
-              class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+              class="h-10 rounded-lg text-sm font-medium transition-colors"
               [class.bg-card]="mode() === 'login'"
-              [class.shadow-xs]="mode() === 'login'"
+              [class.shadow-sm]="mode() === 'login'"
+              [class.text-foreground]="mode() === 'login'"
+              [class.text-muted-foreground]="mode() !== 'login'"
               [attr.aria-pressed]="mode() === 'login'"
               (click)="setMode('login')"
             >
@@ -96,9 +123,11 @@ const INVALID_CREDENTIALS = 'Email o contraseña incorrectos.';
             </button>
             <button
               type="button"
-              class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+              class="h-10 rounded-lg text-sm font-medium transition-colors"
               [class.bg-card]="mode() === 'register'"
-              [class.shadow-xs]="mode() === 'register'"
+              [class.shadow-sm]="mode() === 'register'"
+              [class.text-foreground]="mode() === 'register'"
+              [class.text-muted-foreground]="mode() !== 'register'"
               [attr.aria-pressed]="mode() === 'register'"
               (click)="setMode('register')"
             >
@@ -106,7 +135,7 @@ const INVALID_CREDENTIALS = 'Email o contraseña incorrectos.';
             </button>
           </div>
 
-          <form class="mt-6 space-y-4" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          <form class="mt-8 space-y-6" [formGroup]="form" (ngSubmit)="submit()" novalidate>
             <app-field label="Email" htmlFor="auth-email" [error]="errorFor(form.controls.email)">
               <input
                 appInput
@@ -137,22 +166,32 @@ const INVALID_CREDENTIALS = 'Email o contraseña incorrectos.';
             </app-field>
 
             @if (formError(); as message) {
-              <p class="border-destructive/30 bg-destructive/5 text-destructive rounded-md border px-3 py-2 text-sm" role="alert">
+              <p
+                class="border-destructive/25 bg-destructive/5 text-destructive rounded-lg border px-3.5 py-2.5 text-sm"
+                role="alert"
+              >
                 {{ message }}
               </p>
             }
 
-            <button appButton type="submit" class="w-full" [disabled]="store.isBusy()">
-              @if (store.isBusy()) {
-                <ng-icon name="lucideLoaderCircle" class="animate-spin" />
-                <span>Verificando…</span>
-              } @else {
-                {{ mode() === 'login' ? 'Ingresar' : 'Crear cuenta' }}
-              }
-            </button>
+            <div class="pt-2">
+              <button appButton type="submit" class="h-11 w-full text-sm" [disabled]="store.isBusy()">
+                @if (store.isBusy()) {
+                  <ng-icon name="lucideLoaderCircle" class="animate-spin" />
+                  <span>Verificando…</span>
+                } @else {
+                  <span>{{ submitLabel() }}</span>
+                  <ng-icon name="lucideArrowRight" class="opacity-70" />
+                }
+              </button>
+            </div>
           </form>
+
+          <p class="text-muted-foreground mt-8 text-center text-xs leading-relaxed">
+            El catálogo es compartido: cualquier cuenta autenticada puede gestionarlo.
+          </p>
         </div>
-      </section>
+      </main>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -165,12 +204,9 @@ export class LoginPage {
   protected readonly store = inject(SessionStore);
   protected readonly mode = signal<AuthMode>('login');
   protected readonly formError = signal<string | null>(null);
-
-  protected readonly ledger = [
-    { sku: 'CAF-001', name: 'Café molido 500 g', price: '12.50' },
-    { sku: 'CAF-014', name: 'Café en grano 1 kg', price: '24.90' },
-    { sku: 'TEV-007', name: 'Té verde hoja suelta', price: '9.80' },
-  ] as const;
+  protected readonly submitLabel = computed(() =>
+    this.mode() === 'login' ? 'Ingresar' : 'Crear cuenta',
+  );
 
   /** Se declara antes de `form`: el formulario lo necesita al construirse. */
   private readonly passwordValidator = (control: AbstractControl): ValidationErrors | null => {

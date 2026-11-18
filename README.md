@@ -16,6 +16,7 @@ Las decisiones de implementación y el plan por tareas están en
 - **Reactive Forms** tipados
 - **Tailwind CSS 4** + primitivas propias estilo shadcn/helm sobre Angular CDK y `@spartan-ng/brain`
 - **ng-icon** (Lucide) y toaster de spartan (sonner)
+- **three.js** solo en el hero del login (escena decorativa, carga diferida)
 - **Vitest** para tests, **ESLint** (angular-eslint) + **Prettier**
 
 Bun se usa solo como gestor de paquetes y lanzador de scripts: `ng` corre sobre Node.
@@ -150,6 +151,26 @@ Se prueba lo que protege comportamiento de valor:
 No hay tests de plantillas, componentes dumb, getters triviales ni snapshots.
 
 ## UI
+
+### Login
+
+Split editorial: a la izquierda un hero con una escena 3D de un almacén isométrico
+(three.js) sobre un degradado de marca; a la derecha el formulario. En móvil el hero
+se apila y el formulario entra como una hoja redondeada que se superpone.
+
+La escena es ambiental, no funcional:
+
+- `aria-hidden`, sin interacción, y pausada cuando la pestaña está oculta.
+- Con `prefers-reduced-motion` se renderiza un único frame estático.
+- Si WebGL falla, se queda el degradado CSS: nada se rompe.
+- La cámara retrocede según el aspecto del hero para que el diorama entre completo.
+
+`three` viaja en el chunk de `login-page` (≈116 kB gzip). El bundle inicial no
+cambia porque la ruta es lazy. Para eliminarlo: borra
+`auth/presentation/components/catalog-scene.ts`, su import en `login.page.ts` y la
+dependencia; el hero conserva el degradado.
+
+### Catálogo
 
 Desktop: tabla con acciones por fila. Móvil: cada fila es una tarjeta y la
 paginación se compacta a anterior/siguiente + indicador. Estados cubiertos:

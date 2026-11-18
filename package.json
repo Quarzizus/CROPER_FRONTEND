@@ -37,6 +37,7 @@
     "luxon": "^3.7.2",
     "rxjs": "~7.8.0",
     "tailwind-merge": "^3.7.0",
+    "three": "^0.187.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
@@ -45,6 +46,7 @@
     "@angular/compiler-cli": "^22.2.7",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4.1.12",
+    "@types/three": "^0.187.0",
     "angular-eslint": "^22.8.0",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",

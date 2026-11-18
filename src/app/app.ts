@@ -42,7 +42,15 @@ import { Toaster } from './shared/ui/toast/toaster';
         </header>
       }
 
-      <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <!-- Las features autenticadas viven en una columna centrada; el login es
+           full-bleed y decide su propio layout. -->
+      <main
+        [class]="
+          sessions.isAuthenticated()
+            ? 'mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-8'
+            : 'flex-1'
+        "
+      >
         <router-outlet />
       </main>
     </div>
