@@ -40,10 +40,10 @@ const INVALID_CREDENTIALS = 'Email o contraseña incorrectos.';
     provideIcons({ lucideArrowRight, lucideBoxes, lucideLoaderCircle }),
   ],
   template: `
-    <div class="lg:grid lg:min-h-dvh lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
+    <div class="flex min-h-dvh flex-col lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
       <!-- Hero: el almacén en 3D da contexto al catálogo. -->
       <section
-        class="relative flex min-h-[19rem] flex-col justify-between overflow-hidden px-6 py-7 text-white sm:min-h-[21rem] sm:px-8 sm:py-8 lg:min-h-dvh lg:px-14 lg:py-12"
+        class="relative flex min-h-[17rem] flex-1 flex-col justify-between overflow-hidden px-6 pt-6 pb-16 text-white sm:px-8 sm:pt-7 sm:pb-20 lg:min-h-dvh lg:px-14 lg:pt-12 lg:pb-12"
       >
         <div
           class="pointer-events-none absolute inset-0 bg-[radial-gradient(115%_90%_at_15%_0%,#16543f_0%,#0a2c23_48%,#061a15_100%)]"
@@ -69,16 +69,16 @@ const INVALID_CREDENTIALS = 'Email o contraseña incorrectos.';
           <span class="text-sm font-semibold tracking-tight">Catálogo de productos</span>
         </div>
 
-        <div class="relative z-10 mt-12 lg:mt-0">
+        <div class="relative z-10 mt-10 lg:mt-0">
           <p class="text-[11px] font-semibold tracking-[0.2em] text-emerald-200/75 uppercase">
             Inventario
           </p>
           <h1
-            class="mt-3 max-w-md text-[1.75rem] leading-tight font-semibold tracking-tight text-balance sm:text-4xl lg:text-[2.7rem] lg:leading-[1.08]"
+            class="mt-2 max-w-md text-[1.65rem] leading-[1.15] font-semibold tracking-tight text-balance sm:mt-3 sm:text-3xl lg:text-[2.7rem] lg:leading-[1.08]"
           >
             Cada producto, en su sitio.
           </h1>
-          <p class="mt-3 max-w-sm text-sm leading-relaxed text-white/75 lg:mt-4 lg:text-base">
+          <p class="mt-3 hidden max-w-sm text-sm leading-relaxed text-white/75 sm:block lg:mt-4 lg:text-base">
             Alta, edición y baja con paginación, confirmación antes de borrar y el estado en la
             URL.
           </p>
@@ -94,9 +94,11 @@ const INVALID_CREDENTIALS = 'Email o contraseña incorrectos.';
 
       <!-- Formulario: hoja que se superpone al hero en móvil. -->
       <main
-        class="bg-background relative z-10 -mt-7 rounded-t-[1.75rem] px-5 pt-9 pb-12 shadow-[0_-12px_32px_-16px_rgba(0,0,0,0.45)] sm:px-8 lg:mt-0 lg:flex lg:items-center lg:justify-center lg:rounded-none lg:px-14 lg:py-16 lg:shadow-none"
+        class="relative z-10 -mt-9 flex flex-col justify-start px-4 pb-6 sm:px-6 lg:mt-0 lg:justify-center lg:px-14 lg:py-16"
       >
-        <div class="mx-auto w-full max-w-[25rem]">
+        <div
+          class="bg-background mx-auto w-full max-w-md rounded-2xl p-6 shadow-xl shadow-black/10 ring-1 ring-black/5 sm:p-8 lg:max-w-[25rem] lg:p-0 lg:shadow-none lg:ring-0"
+        >
           <h2 class="text-2xl font-semibold tracking-tight">
             {{ mode() === 'login' ? 'Ingresa a tu catálogo' : 'Crea tu cuenta' }}
           </h2>
@@ -186,10 +188,6 @@ const INVALID_CREDENTIALS = 'Email o contraseña incorrectos.';
               </button>
             </div>
           </form>
-
-          <p class="text-muted-foreground mt-8 text-center text-xs leading-relaxed">
-            El catálogo es compartido: cualquier cuenta autenticada puede gestionarlo.
-          </p>
         </div>
       </main>
     </div>

@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import {
   ACESFilmicToneMapping,
-  Clock,
+  Timer,
   DirectionalLight,
   Fog,
   Group,
@@ -149,7 +149,7 @@ export class CatalogScene {
       const aspect = width / height;
       // En una columna vertical la cámara retrocede para que el almacén entre
       // completo; en un hero ancho y bajo se queda cerca.
-      const pullback = aspect < 1.25 ? 1 + (1.25 - aspect) * 1.6 : 1;
+      const pullback = aspect < 1.25 ? 1 + (1.25 - aspect) * 1.05 : 1;
 
       fog.near = 15 * pullback;
       fog.far = 33 * pullback;
@@ -174,11 +174,13 @@ export class CatalogScene {
     renderer.toneMappingExposure = 1.22;
     frame();
 
-    const clock = new Clock();
+    const timer = new Timer();
+    timer.connect(document);
     let frameId = 0;
 
     const tick = (): void => {
-      const time = clock.getElapsedTime();
+      timer.update();
+      const time = timer.getElapsed();
 
       group.rotation.y = -0.42 + Math.sin(time * 0.12) * 0.16 + pointer.x * 0.16;
       group.position.y = Math.sin(time * 0.4) * 0.07;
@@ -199,7 +201,6 @@ export class CatalogScene {
       if (frameId !== 0) {
         return;
       }
-      clock.start();
       frameId = requestAnimationFrame(tick);
     };
 
@@ -229,6 +230,7 @@ export class CatalogScene {
 
     this.destroyRef.onDestroy(() => {
       pause();
+      timer.dispose();
       resize.disconnect();
       window.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('visibilitychange', onVisibilityChange);

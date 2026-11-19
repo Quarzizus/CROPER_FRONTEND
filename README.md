@@ -155,8 +155,9 @@ No hay tests de plantillas, componentes dumb, getters triviales ni snapshots.
 ### Login
 
 Split editorial: a la izquierda un hero con una escena 3D de un almacén isométrico
-(three.js) sobre un degradado de marca; a la derecha el formulario. En móvil el hero
-se apila y el formulario entra como una hoja redondeada que se superpone.
+(three.js) sobre un degradado de marca; a la derecha el formulario. En pantallas
+menores el hero ocupa todo el alto libre y el formulario entra como una tarjeta
+redondeada que se superpone: sin espacio muerto al final de la página.
 
 La escena es ambiental, no funcional:
 
@@ -172,7 +173,8 @@ dependencia; el hero conserva el degradado.
 
 ### Catálogo
 
-Desktop: tabla con acciones por fila. Móvil: cada fila es una tarjeta y la
+Desktop: tabla con acciones por fila en un menú de tres puntos (`@angular/cdk/menu`:
+teclado, `role=menu`, cierre con Esc y foco devuelto al disparador). Móvil: cada fila es una tarjeta y la
 paginación se compacta a anterior/siguiente + indicador. Estados cubiertos:
 skeleton, vacío, error con Reintentar y éxito. Los iconos llevan `aria-label` y el
 diálogo de borrado usa Angular CDK (foco atrapado, `aria-modal`, foco restaurado).
