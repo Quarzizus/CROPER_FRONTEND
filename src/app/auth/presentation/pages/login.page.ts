@@ -7,7 +7,13 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideArrowRight, lucideBoxes, lucideLoaderCircle } from '@ng-icons/lucide';
+import {
+  lucideArrowRight,
+  lucideBoxes,
+  lucideEye,
+  lucideEyeOff,
+  lucideLoaderCircle,
+} from '@ng-icons/lucide';
 import { SessionStore } from '../../application/session.store';
 import {
   validateEmail,
@@ -37,7 +43,7 @@ const INVALID_CREDENTIALS = 'Email o contraseña incorrectos.';
     CatalogScene,
   ],
   viewProviders: [
-    provideIcons({ lucideArrowRight, lucideBoxes, lucideLoaderCircle }),
+    provideIcons({ lucideArrowRight, lucideBoxes, lucideEye, lucideEyeOff, lucideLoaderCircle }),
   ],
   template: `
     <div class="flex min-h-dvh flex-col lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
@@ -157,14 +163,31 @@ const INVALID_CREDENTIALS = 'Email o contraseña incorrectos.';
               [error]="errorFor(form.controls.password)"
               [hint]="mode() === 'register' ? 'Mínimo 10 caracteres.' : null"
             >
-              <input
-                appInput
-                id="auth-password"
-                type="password"
-                [autocomplete]="mode() === 'register' ? 'new-password' : 'current-password'"
-                formControlName="password"
-                [attr.aria-invalid]="showError(form.controls.password)"
-              />
+              <div class="relative">
+                <input
+                  appInput
+                  id="auth-password"
+                  [type]="passwordType()"
+                  class="pr-11"
+                  [autocomplete]="mode() === 'register' ? 'new-password' : 'current-password'"
+                  formControlName="password"
+                  [attr.aria-invalid]="showError(form.controls.password)"
+                />
+                <button
+                  type="button"
+                  class="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring absolute inset-y-0 right-1.5 my-auto inline-flex size-8 items-center justify-center rounded-md transition-colors outline-none focus-visible:ring-2"
+                  [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                  [attr.aria-pressed]="showPassword()"
+                  aria-controls="auth-password"
+                  (click)="showPassword.update((visible) => !visible)"
+                >
+                  <ng-icon
+                    [name]="showPassword() ? 'lucideEyeOff' : 'lucideEye'"
+                    size="1rem"
+                    aria-hidden="true"
+                  />
+                </button>
+              </div>
             </app-field>
 
             @if (formError(); as message) {
@@ -202,6 +225,8 @@ export class LoginPage {
   protected readonly store = inject(SessionStore);
   protected readonly mode = signal<AuthMode>('login');
   protected readonly formError = signal<string | null>(null);
+  protected readonly showPassword = signal(false);
+  protected readonly passwordType = computed(() => (this.showPassword() ? 'text' : 'password'));
   protected readonly submitLabel = computed(() =>
     this.mode() === 'login' ? 'Ingresar' : 'Crear cuenta',
   );
