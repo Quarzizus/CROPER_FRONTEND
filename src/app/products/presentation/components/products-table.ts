@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideCircleAlert,
+  lucideEllipsisVertical,
   lucideLoaderCircle,
   lucidePackagePlus,
   lucidePencil,
@@ -27,10 +29,11 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
  */
 @Component({
   selector: 'app-products-table',
-  imports: [NgIcon, ButtonDirective, Badge, Pagination, SkeletonDirective],
+  imports: [NgIcon, ButtonDirective, Badge, Pagination, SkeletonDirective, CdkMenu, CdkMenuItem, CdkMenuTrigger],
   viewProviders: [
     provideIcons({
       lucideCircleAlert,
+      lucideEllipsisVertical,
       lucideLoaderCircle,
       lucidePackagePlus,
       lucidePencil,
@@ -89,7 +92,7 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
               <th scope="col" class="px-4 py-3 font-medium">SKU</th>
               <th scope="col" class="px-4 py-3 font-medium">Producto</th>
               <th scope="col" class="px-4 py-3 text-right font-medium">Precio</th>
-              <th scope="col" class="px-4 py-3 text-right font-medium">Stock</th>
+              <th scope="col" class="px-4 py-3 text-center font-medium">Stock</th>
               <th scope="col" class="px-4 py-3 font-medium">Estado</th>
               <th scope="col" class="px-4 py-3 text-right font-medium">Acciones</th>
             </tr>
@@ -109,7 +112,7 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
                 <td class="px-4 py-3 text-right font-mono tabular-nums">
                   {{ formatPrice(product.price) }}
                 </td>
-                <td class="px-4 py-3 text-right font-mono tabular-nums">{{ product.stock }}</td>
+                <td class="px-4 py-3 text-center font-mono tabular-nums">{{ product.stock }}</td>
                 <td class="px-4 py-3">
                   @if (product.isActive) {
                     <app-badge variant="success">Disponible</app-badge>
@@ -118,31 +121,43 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
                   }
                 </td>
                 <td class="px-4 py-3">
-                  <div class="flex items-center justify-end gap-1">
+                  <div class="flex justify-end">
                     <button
-                      appButton
-                      variant="ghost"
-                      size="icon"
                       type="button"
-                      [attr.aria-label]="'Editar ' + product.name"
+                      class="text-muted-foreground hover:bg-accent hover:text-accent-foreground inline-flex size-9 items-center justify-center rounded-md transition-colors disabled:pointer-events-none disabled:opacity-50"
+                      [attr.aria-label]="'Acciones de ' + product.name"
+                      [cdkMenuTriggerFor]="rowActions"
                       [disabled]="isSaving()"
-                      (click)="edit.emit(product)"
                     >
-                      <ng-icon name="lucidePencil" />
-                    </button>
-                    <button
-                      appButton
-                      variant="ghost"
-                      size="icon"
-                      type="button"
-                      class="text-destructive hover:bg-destructive/10"
-                      [attr.aria-label]="'Eliminar ' + product.name"
-                      [disabled]="isSaving()"
-                      (click)="remove.emit(product)"
-                    >
-                      <ng-icon name="lucideTrash2" />
+                      <ng-icon name="lucideEllipsisVertical" />
                     </button>
                   </div>
+
+                  <ng-template #rowActions>
+                    <div
+                      cdkMenu
+                      class="bg-popover text-popover-foreground min-w-[11rem] rounded-lg border p-1 shadow-lg shadow-black/10"
+                    >
+                      <button
+                        cdkMenuItem
+                        type="button"
+                        class="hover:bg-accent focus-visible:bg-accent flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm outline-none"
+                        (cdkMenuItemTriggered)="edit.emit(product)"
+                      >
+                        <ng-icon name="lucidePencil" class="text-muted-foreground" size="0.95rem" />
+                        Editar
+                      </button>
+                      <button
+                        cdkMenuItem
+                        type="button"
+                        class="text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm outline-none"
+                        (cdkMenuItemTriggered)="remove.emit(product)"
+                      >
+                        <ng-icon name="lucideTrash2" size="0.95rem" />
+                        Eliminar
+                      </button>
+                    </div>
+                  </ng-template>
                 </td>
               </tr>
             }
@@ -181,31 +196,41 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
                 </div>
               </dl>
 
-              <div class="flex items-center gap-1">
-                <button
-                  appButton
-                  variant="outline"
-                  size="icon"
-                  type="button"
-                  [attr.aria-label]="'Editar ' + product.name"
-                  [disabled]="isSaving()"
-                  (click)="edit.emit(product)"
+              <button
+                type="button"
+                class="text-muted-foreground hover:bg-accent hover:text-accent-foreground inline-flex size-9 shrink-0 items-center justify-center rounded-md border transition-colors disabled:pointer-events-none disabled:opacity-50"
+                [attr.aria-label]="'Acciones de ' + product.name"
+                [cdkMenuTriggerFor]="cardActions"
+                [disabled]="isSaving()"
+              >
+                <ng-icon name="lucideEllipsisVertical" />
+              </button>
+
+              <ng-template #cardActions>
+                <div
+                  cdkMenu
+                  class="bg-popover text-popover-foreground min-w-[11rem] rounded-lg border p-1 shadow-lg shadow-black/10"
                 >
-                  <ng-icon name="lucidePencil" />
-                </button>
-                <button
-                  appButton
-                  variant="outline"
-                  size="icon"
-                  type="button"
-                  class="text-destructive border-destructive/30 hover:bg-destructive/10"
-                  [attr.aria-label]="'Eliminar ' + product.name"
-                  [disabled]="isSaving()"
-                  (click)="remove.emit(product)"
-                >
-                  <ng-icon name="lucideTrash2" />
-                </button>
-              </div>
+                  <button
+                    cdkMenuItem
+                    type="button"
+                    class="hover:bg-accent focus-visible:bg-accent flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm outline-none"
+                    (cdkMenuItemTriggered)="edit.emit(product)"
+                  >
+                    <ng-icon name="lucidePencil" class="text-muted-foreground" size="0.95rem" />
+                    Editar
+                  </button>
+                  <button
+                    cdkMenuItem
+                    type="button"
+                    class="text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm outline-none"
+                    (cdkMenuItemTriggered)="remove.emit(product)"
+                  >
+                    <ng-icon name="lucideTrash2" size="0.95rem" />
+                    Eliminar
+                  </button>
+                </div>
+              </ng-template>
             </div>
           </li>
         }
