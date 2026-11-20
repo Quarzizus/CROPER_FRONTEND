@@ -33,11 +33,14 @@ export function normalizePage(value: unknown, totalPages?: number): number {
   return typeof totalPages === 'number' ? Math.min(parsed, Math.max(totalPages, 1)) : parsed;
 }
 
-/** Solo se aceptan los tamaños ofrecidos por la UI, dentro del límite de la API. */
+/**
+ * Solo se aceptan los tamaños que ofrece el selector: si llega otro valor en la
+ * URL (`?size=37`), el select no tendría esa opción y mostraría una cosa mientras
+ * la API devuelve otra. Cualquier valor fuera de la lista cae al tamaño por
+ * defecto (10).
+ */
 export function normalizePageSize(value: unknown): number {
   const parsed = typeof value === 'number' ? value : Number(value);
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > MAX_PAGE_SIZE) {
-    return DEFAULT_PAGE_SIZE;
-  }
-  return parsed;
+  const offered: readonly number[] = PAGE_SIZE_OPTIONS;
+  return offered.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE;
 }

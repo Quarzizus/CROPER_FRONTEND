@@ -147,6 +147,16 @@ describe('ProductsStore', () => {
     await vi.waitFor(() => expect(repository.listCalls.at(-1)).toEqual({ page: 1, size: 10 }));
   });
 
+  it('ignora un tamaño que el selector no ofrece y vuelve a 10', async () => {
+    // Regresión: `?size=37` era aceptado por la API pero el select no tenía esa
+    // opción, así que mostraba 10 mientras se pedían 37 filas.
+    store.applyQuery(1, 37);
+
+    await vi.waitFor(() => expect(repository.listCalls).toHaveLength(1));
+    expect(repository.listCalls[0]).toEqual({ page: 1, size: 10 });
+    expect(store.pageSize()).toBe(10);
+  });
+
   it('limita goToPage a la última página disponible', async () => {
     repository.listHandler = async (request) =>
       pageOf([product('a')], { page: request.page, size: request.size, total: 15 });

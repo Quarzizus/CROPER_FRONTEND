@@ -42,11 +42,12 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
     }),
   ],
   template: `
-    @if (isLoading()) {
+    @if (isLoading() && items().length === 0) {
+      <!-- Solo en la primera carga: no hay contenido previo que conservar. -->
       <div class="space-y-3" aria-busy="true" aria-live="polite">
         <span class="sr-only">Cargando productos…</span>
         @for (row of skeletonRows; track row) {
-          <div appSkeleton class="h-16 w-full rounded-xl"></div>
+          <div appSkeleton class="h-[4.75rem] w-full rounded-xl"></div>
         }
       </div>
     } @else if (hasError()) {
@@ -81,25 +82,36 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
         </button>
       </div>
     } @else {
-      <!-- Desktop: tabla completa. -->
-      <div class="hidden overflow-hidden rounded-xl border md:block">
+      <!-- Desktop: tabla completa con cabecera sticky dentro de su area de scroll. -->
+      <div
+        class="hidden h-[clamp(20rem,62vh,40rem)] overflow-auto rounded-xl border md:block"
+        [class.opacity-60]="isLoading()"
+        [class.pointer-events-none]="isLoading()"
+        [attr.aria-busy]="isLoading()"
+      >
         <table class="w-full border-collapse text-sm">
           <caption class="sr-only">
             Productos del catálogo, página {{ page() }} de {{ totalPages() }}
           </caption>
-          <thead class="bg-muted/60 text-muted-foreground text-left text-xs tracking-wide uppercase">
+          <thead class="text-muted-foreground text-left text-xs tracking-wide uppercase">
             <tr>
-              <th scope="col" class="px-4 py-3 font-medium">SKU</th>
-              <th scope="col" class="px-4 py-3 font-medium">Producto</th>
-              <th scope="col" class="px-4 py-3 text-right font-medium">Precio</th>
-              <th scope="col" class="px-4 py-3 text-center font-medium">Stock</th>
-              <th scope="col" class="px-4 py-3 font-medium">Estado</th>
-              <th scope="col" class="px-4 py-3 text-right font-medium">Acciones</th>
+              <th scope="col" class="bg-muted sticky top-0 z-10 px-4 py-3 font-medium">SKU</th>
+              <th scope="col" class="bg-muted sticky top-0 z-10 px-4 py-3 font-medium">Producto</th>
+              <th scope="col" class="bg-muted sticky top-0 z-10 px-4 py-3 text-right font-medium">
+                Precio
+              </th>
+              <th scope="col" class="bg-muted sticky top-0 z-10 px-4 py-3 text-center font-medium">
+                Stock
+              </th>
+              <th scope="col" class="bg-muted sticky top-0 z-10 px-4 py-3 font-medium">Estado</th>
+              <th scope="col" class="bg-muted sticky top-0 z-10 px-4 py-3 text-center font-medium">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody class="divide-border divide-y">
             @for (product of items(); track product.id) {
-              <tr class="hover:bg-muted/40 transition-colors">
+              <tr class="hover:bg-muted/40 h-[4.5rem] transition-colors">
                 <td class="text-primary px-4 py-3 font-mono text-xs font-medium whitespace-nowrap">
                   {{ product.sku }}
                 </td>
@@ -121,7 +133,7 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
                   }
                 </td>
                 <td class="px-4 py-3">
-                  <div class="flex justify-end">
+                  <div class="flex justify-center">
                     <button
                       type="button"
                       class="text-muted-foreground hover:bg-accent hover:text-accent-foreground inline-flex size-9 items-center justify-center rounded-md transition-colors disabled:pointer-events-none disabled:opacity-50"
@@ -166,7 +178,12 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
       </div>
 
       <!-- Móvil: cada fila es una tarjeta. -->
-      <ul class="space-y-3 md:hidden">
+      <ul
+        class="space-y-3 md:hidden"
+        [class.opacity-60]="isLoading()"
+        [class.pointer-events-none]="isLoading()"
+        [attr.aria-busy]="isLoading()"
+      >
         @for (product of items(); track product.id) {
           <li class="bg-card rounded-xl border p-4">
             <div class="flex items-start justify-between gap-3">
@@ -242,7 +259,7 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
           [pageSize]="pageSize()"
           [total]="total()"
           [totalPages]="totalPages()"
-          [busy]="isSaving()"
+          [busy]="isLoading() || isSaving()"
           (pageChange)="pageChange.emit($event)"
           (pageSizeChange)="pageSizeChange.emit($event)"
         />
