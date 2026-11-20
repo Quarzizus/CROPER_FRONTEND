@@ -30,7 +30,7 @@ export interface AppError {
   readonly fieldErrors: readonly FieldError[];
 }
 
-/** Mensajes exactos de docs/ARCHITECTURE.md §7 más los casos que la API añade. */
+/** Mensajes exactos de docs/ENUNCIADO.md §7 más los casos que la API añade. */
 export const APP_ERROR_MESSAGES = {
   offline: 'No hay conexión. Revisa tu internet e intenta de nuevo.',
   unauthorized: 'Tu sesión expiró. Inicia sesión de nuevo.',
