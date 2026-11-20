@@ -78,4 +78,3 @@ mapeo de errores. Sin tests de plantillas ni de componentes sin lógica.
 
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — diseño, contrato, decisiones y límites
 - [`docs/ENUNCIADO.md`](./docs/ENUNCIADO.md) — enunciado original
-- [`odd/tasks/products-frontend.md`](./odd/tasks/products-frontend.md) — bitácora de trabajo y verificación
