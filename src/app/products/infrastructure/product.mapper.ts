@@ -1,6 +1,7 @@
-import { totalPagesFor, type Page, type PageRequest } from '../domain/page';
+import { totalPagesFor, type Page } from '../domain/page';
 import type { Product } from '../domain/product';
 import type { ProductDraft } from '../domain/product-draft';
+import type { ProductListRequest, ProductSort } from '../domain/product-filters';
 import type {
   ListProductsQueryDto,
   PaginatedProductsDto,
@@ -46,8 +47,37 @@ export function toPage(dto: PaginatedProductsDto): Page<Product> {
   };
 }
 
-export function toListQuery(request: PageRequest): ListProductsQueryDto {
-  return { page: request.page, limit: request.size };
+/**
+ * La API es estricta con el query: un filtro vacío (`search=`) responde 400 y
+ * un parámetro desconocido también. Por eso solo viaja lo que filtra de verdad.
+ * `sort` va siempre: el orden por defecto lo fija el dominio, no el servidor.
+ */
+export function toListQuery(request: ProductListRequest): ListProductsQueryDto {
+  const { filters } = request;
+  const query: {
+    page: number;
+    limit: number;
+    sort: ProductSort;
+    search?: string;
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  } = { page: request.page, limit: request.size, sort: filters.sort };
+
+  if (filters.search !== null) {
+    query.search = filters.search;
+  }
+  if (filters.category !== null) {
+    query.category = filters.category;
+  }
+  if (filters.minPrice !== null) {
+    query.minPrice = filters.minPrice;
+  }
+  if (filters.maxPrice !== null) {
+    query.maxPrice = filters.maxPrice;
+  }
+
+  return query;
 }
 
 /**

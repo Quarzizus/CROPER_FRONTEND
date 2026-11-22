@@ -6,6 +6,7 @@ import { asAppError, type FieldError } from '../../../core/http/app-error';
 import { Notifier } from '../../../core/notifications/notifier';
 import { SkeletonDirective } from '../../../shared/ui/skeleton/skeleton.directive';
 import { ProductsStore } from '../../application/products.store';
+import { compactParams, filtersFromQuery, filtersToQueryParams } from '../../domain/product-filters';
 import type { ProductDraft } from '../../domain/product-draft';
 import { ProductFormComponent } from '../components/product-form';
 
@@ -95,20 +96,14 @@ export class ProductFormPage {
     });
   }
 
+  /** El retorno conserva página, tamaño y filtros: editar no pierde el contexto. */
   protected returnParams(): Record<string, string> {
     const params = this.route.snapshot.queryParamMap;
-    const result: Record<string, string> = {};
-    const page = params.get('page');
-    const size = params.get('size');
 
-    if (page) {
-      result['page'] = page;
-    }
-    if (size) {
-      result['size'] = size;
-    }
-
-    return result;
+    return {
+      ...compactParams({ page: params.get('page'), size: params.get('size') }),
+      ...compactParams(filtersToQueryParams(filtersFromQuery(params))),
+    };
   }
 
   protected back(): void {

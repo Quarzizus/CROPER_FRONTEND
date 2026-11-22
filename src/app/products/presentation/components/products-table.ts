@@ -8,7 +8,9 @@ import {
   lucidePackagePlus,
   lucidePencil,
   lucideRotateCcw,
+  lucideSearchX,
   lucideTrash2,
+  lucideX,
 } from '@ng-icons/lucide';
 import type { AppError } from '../../../core/http/app-error';
 import { Badge } from '../../../shared/ui/badge/badge';
@@ -38,7 +40,9 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
       lucidePackagePlus,
       lucidePencil,
       lucideRotateCcw,
+      lucideSearchX,
       lucideTrash2,
+      lucideX,
     }),
   ],
   template: `
@@ -70,16 +74,27 @@ const priceFormatter = new Intl.NumberFormat('es-ES', {
     } @else if (isEmpty()) {
       <div class="flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-16 text-center">
         <span class="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-full">
-          <ng-icon name="lucidePackagePlus" size="1.4rem" />
+          <ng-icon [name]="hasFilters() ? 'lucideSearchX' : 'lucidePackagePlus'" size="1.4rem" />
         </span>
-        <p class="font-medium">El catálogo está vacío</p>
-        <p class="text-muted-foreground max-w-sm text-sm">
-          Crea el primer producto para verlo aquí, con su SKU, precio y stock.
-        </p>
-        <button appButton type="button" class="mt-2" (click)="createRequested.emit()">
-          <ng-icon name="lucidePackagePlus" />
-          Crear producto
-        </button>
+        @if (hasFilters()) {
+          <p class="font-medium">Ningún producto coincide con los filtros</p>
+          <p class="text-muted-foreground max-w-sm text-sm">
+            Prueba con otro nombre, otra categoría o un rango de precio más amplio.
+          </p>
+          <button appButton variant="outline" type="button" class="mt-2" (click)="clearFilters.emit()">
+            <ng-icon name="lucideX" />
+            Limpiar filtros
+          </button>
+        } @else {
+          <p class="font-medium">El catálogo está vacío</p>
+          <p class="text-muted-foreground max-w-sm text-sm">
+            Crea el primer producto para verlo aquí, con su SKU, precio y stock.
+          </p>
+          <button appButton type="button" class="mt-2" (click)="createRequested.emit()">
+            <ng-icon name="lucidePackagePlus" />
+            Crear producto
+          </button>
+        }
       </div>
     } @else {
       <!-- Desktop: tabla completa con cabecera sticky dentro de su area de scroll. -->
@@ -277,6 +292,7 @@ export class ProductsTable {
   readonly totalPages = input.required<number>();
   readonly status = input.required<ProductsStatus>();
   readonly error = input<AppError | null>(null);
+  readonly hasFilters = input(false);
 
   readonly pageChange = output<number>();
   readonly pageSizeChange = output<number>();
@@ -284,6 +300,7 @@ export class ProductsTable {
   readonly remove = output<Product>();
   readonly retry = output<void>();
   readonly createRequested = output<void>();
+  readonly clearFilters = output<void>();
 
   protected readonly skeletonRows = [0, 1, 2, 3, 4] as const;
 

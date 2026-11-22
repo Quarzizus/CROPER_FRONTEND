@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NO_PRODUCT_FILTERS } from '../domain/product-filters';
 import type { ProductDraft } from '../domain/product-draft';
 import type { PaginatedProductsDto, ProductDto } from './product.dto';
 import { toListQuery, toPage, toProduct, toWriteRequest } from './product.mapper';
@@ -74,7 +75,55 @@ describe('toPage', () => {
 
 describe('toListQuery', () => {
   it('envía page y limit: la API no acepta `size`', () => {
-    expect(toListQuery({ page: 3, size: 50 })).toEqual({ page: 3, limit: 50 });
+    expect(toListQuery({ page: 3, size: 50, filters: NO_PRODUCT_FILTERS })).toEqual({
+      page: 3,
+      limit: 50,
+      sort: '-createdAt',
+    });
+  });
+
+  it('omite los filtros vacíos: la API responde 400 a `search=`', () => {
+    const query = toListQuery({ page: 1, size: 10, filters: NO_PRODUCT_FILTERS });
+
+    expect(query).not.toHaveProperty('search');
+    expect(query).not.toHaveProperty('category');
+    expect(query).not.toHaveProperty('minPrice');
+    expect(query).not.toHaveProperty('maxPrice');
+  });
+
+  it('traduce los filtros activos, con el orden pedido', () => {
+    expect(
+      toListQuery({
+        page: 2,
+        size: 20,
+        filters: {
+          search: 'cafe',
+          category: 'bebidas',
+          minPrice: 5,
+          maxPrice: 20,
+          sort: 'price',
+        },
+      }),
+    ).toEqual({
+      page: 2,
+      limit: 20,
+      search: 'cafe',
+      category: 'bebidas',
+      minPrice: 5,
+      maxPrice: 20,
+      sort: 'price',
+    });
+  });
+
+  it('envía un rango de precio abierto', () => {
+    const query = toListQuery({
+      page: 1,
+      size: 10,
+      filters: { ...NO_PRODUCT_FILTERS, minPrice: 0 },
+    });
+
+    expect(query).toMatchObject({ minPrice: 0 });
+    expect(query).not.toHaveProperty('maxPrice');
   });
 });
 

@@ -1,7 +1,8 @@
 # Catálogo de productos — Frontend
 
 SPA Angular 22 que gestiona el catálogo de la API del Ejercicio 1: listar con
-paginación, crear, editar y eliminar productos.
+paginación, búsqueda y filtros (nombre, categoría, precio, orden), crear, editar y
+eliminar productos.
 
 - Enunciado original: [`docs/ENUNCIADO.md`](./docs/ENUNCIADO.md)
 - Arquitectura y decisiones: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)
@@ -71,8 +72,9 @@ Detalle y reglas de dependencia en [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.
 
 ## Tests
 
-45 tests en 4 archivos: reglas de producto, mapper del contrato, `ProductsStore` y
-mapeo de errores. Sin tests de plantillas ni de componentes sin lógica.
+75 tests en 6 archivos: reglas de producto, filtros del listado (dominio y barra),
+mapper del contrato, `ProductsStore` y mapeo de errores. Sin tests de plantillas ni
+de componentes sin lógica.
 
 ## Documentación
 

@@ -1,9 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { toAppError } from '../../core/http/app-error';
-import type { Page, PageRequest } from '../domain/page';
+import type { Page } from '../domain/page';
 import type { Product } from '../domain/product';
 import type { ProductDraft } from '../domain/product-draft';
+import {
+  NO_PRODUCT_FILTERS,
+  type ProductFilters,
+  type ProductListRequest,
+} from '../domain/product-filters';
 import { ProductRepository } from '../domain/product.repository';
 import { ProductsStore } from './products.store';
 
@@ -32,26 +37,30 @@ function product(id: string): Product {
   };
 }
 
+function listRequest(page: number, size: number, filters: ProductFilters = NO_PRODUCT_FILTERS): ProductListRequest {
+  return { page, size, filters };
+}
+
 function pageOf(items: Product[], meta: { page: number; size: number; total: number }): Page<Product> {
   return { items, ...meta, totalPages: Math.max(1, Math.ceil(meta.total / meta.size)) };
 }
 
 class FakeProductRepository implements ProductRepository {
-  readonly listCalls: PageRequest[] = [];
+  readonly listCalls: ProductListRequest[] = [];
   readonly createCalls: ProductDraft[] = [];
   readonly updateCalls: { id: string; draft: ProductDraft }[] = [];
   readonly removeCalls: string[] = [];
   readonly getByIdCalls: string[] = [];
 
   // La API echoa `page` y `limit` de la petición; el fake hace lo mismo.
-  listHandler: (request: PageRequest) => Promise<Page<Product>> = async (request) =>
+  listHandler: (request: ProductListRequest) => Promise<Page<Product>> = async (request) =>
     pageOf([], { page: request.page, size: request.size, total: 0 });
   createHandler: (value: ProductDraft) => Promise<Product> = async () => product('created');
   updateHandler: (id: string, value: ProductDraft) => Promise<Product> = async () => product('updated');
   removeHandler: (id: string) => Promise<void> = async () => undefined;
   getByIdHandler: (id: string) => Promise<Product> = async () => product('one');
 
-  list(request: PageRequest): Promise<Page<Product>> {
+  list(request: ProductListRequest): Promise<Page<Product>> {
     this.listCalls.push(request);
     return this.listHandler(request);
   }
@@ -106,7 +115,7 @@ describe('ProductsStore', () => {
     store.load();
 
     await vi.waitFor(() => expect(store.items()).toHaveLength(2));
-    expect(repository.listCalls).toEqual([{ page: 1, size: 10 }]);
+    expect(repository.listCalls).toEqual([listRequest(1, 10)]);
     expect(store.total()).toBe(2);
     expect(store.totalPages()).toBe(1);
     expect(store.isLoading()).toBe(false);
@@ -121,7 +130,7 @@ describe('ProductsStore', () => {
     store.applyQuery(1, 10);
 
     await vi.waitFor(() => expect(repository.listCalls).toHaveLength(1));
-    expect(repository.listCalls[0]).toEqual({ page: 1, size: 10 });
+    expect(repository.listCalls[0]).toEqual(listRequest(1, 10));
     expect(store.items()).toHaveLength(1);
   });
 
@@ -132,10 +141,52 @@ describe('ProductsStore', () => {
     store.applyQuery(2, 10);
 
     await vi.waitFor(() => expect(repository.listCalls).toHaveLength(1));
-    expect(repository.listCalls[0]).toEqual({ page: 2, size: 10 });
+    expect(repository.listCalls[0]).toEqual(listRequest(2, 10));
 
     store.applyQuery(2, 10);
     expect(repository.listCalls).toHaveLength(1);
+  });
+
+  it('envía los filtros aplicados y los expone en el estado', async () => {
+    const filters: ProductFilters = {
+      ...NO_PRODUCT_FILTERS,
+      search: 'cafe',
+      minPrice: 5,
+      sort: 'price',
+    };
+
+    store.applyQuery(1, 10, filters);
+
+    await vi.waitFor(() => expect(repository.listCalls).toHaveLength(1));
+    expect(repository.listCalls[0]).toEqual(listRequest(1, 10, filters));
+    expect(store.filters()).toEqual(filters);
+    expect(store.hasFilters()).toBe(true);
+  });
+
+  it('no recarga si la URL trae los mismos filtros en otro objeto', async () => {
+    repository.listHandler = async (page) =>
+      pageOf([product('a')], { page: page.page, size: page.size, total: 100 });
+
+    store.applyQuery(2, 10, { ...NO_PRODUCT_FILTERS, category: 'semillas' });
+    await vi.waitFor(() => expect(repository.listCalls).toHaveLength(1));
+
+    // `filtersFromQuery` devuelve un objeto nuevo en cada lectura del router.
+    store.applyQuery(2, 10, { ...NO_PRODUCT_FILTERS, category: 'semillas' });
+
+    expect(repository.listCalls).toHaveLength(1);
+  });
+
+  it('pide la página concreta junto con los filtros', async () => {
+    repository.listHandler = async (page) =>
+      pageOf([product('a')], { page: page.page, size: page.size, total: 100 });
+
+    const filters: ProductFilters = { ...NO_PRODUCT_FILTERS, maxPrice: 20 };
+
+    store.applyQuery(3, 10, filters);
+
+    await vi.waitFor(() => expect(repository.listCalls).toHaveLength(1));
+    expect(repository.listCalls[0]).toEqual(listRequest(3, 10, filters));
+    expect(store.page()).toBe(3);
   });
 
   it('normaliza query params inválidos en lugar de pedir basura a la API', async () => {
@@ -144,7 +195,7 @@ describe('ProductsStore', () => {
 
     store.applyQuery(0, 999);
 
-    await vi.waitFor(() => expect(repository.listCalls.at(-1)).toEqual({ page: 1, size: 10 }));
+    await vi.waitFor(() => expect(repository.listCalls.at(-1)).toEqual(listRequest(1, 10)));
   });
 
   it('ignora un tamaño que el selector no ofrece y vuelve a 10', async () => {
@@ -153,7 +204,7 @@ describe('ProductsStore', () => {
     store.applyQuery(1, 37);
 
     await vi.waitFor(() => expect(repository.listCalls).toHaveLength(1));
-    expect(repository.listCalls[0]).toEqual({ page: 1, size: 10 });
+    expect(repository.listCalls[0]).toEqual(listRequest(1, 10));
     expect(store.pageSize()).toBe(10);
   });
 
@@ -166,7 +217,7 @@ describe('ProductsStore', () => {
 
     store.goToPage(9);
 
-    await vi.waitFor(() => expect(repository.listCalls.at(-1)).toEqual({ page: 2, size: 10 }));
+    await vi.waitFor(() => expect(repository.listCalls.at(-1)).toEqual(listRequest(2, 10)));
   });
 
   it('cambiar el tamaño de página vuelve a la primera', async () => {
@@ -175,7 +226,7 @@ describe('ProductsStore', () => {
 
     store.setPageSize(20);
 
-    await vi.waitFor(() => expect(repository.listCalls.at(-1)).toEqual({ page: 1, size: 20 }));
+    await vi.waitFor(() => expect(repository.listCalls.at(-1)).toEqual(listRequest(1, 20)));
     expect(store.page()).toBe(1);
     expect(store.pageSize()).toBe(20);
   });
@@ -184,13 +235,16 @@ describe('ProductsStore', () => {
     repository.listHandler = async (request) =>
       pageOf([product('a')], { page: request.page, size: request.size, total: 21 });
 
-    store.applyQuery(2, 10);
+    const filters: ProductFilters = { ...NO_PRODUCT_FILTERS, search: 'cafe' };
+
+    store.applyQuery(2, 10, filters);
     await vi.waitFor(() => expect(repository.listCalls).toHaveLength(1));
 
     await store.create(draft);
 
     expect(repository.createCalls).toEqual([draft]);
-    expect(repository.listCalls.at(-1)).toEqual({ page: 2, size: 10 });
+    // La recarga conserva la página y los filtros: no salta a otro listado.
+    expect(repository.listCalls.at(-1)).toEqual(listRequest(2, 10, filters));
     expect(repository.listCalls).toHaveLength(2);
   });
 
@@ -204,7 +258,7 @@ describe('ProductsStore', () => {
     await store.update('abc', draft);
 
     expect(repository.updateCalls).toEqual([{ id: 'abc', draft }]);
-    expect(repository.listCalls.at(-1)).toEqual({ page: 2, size: 10 });
+    expect(repository.listCalls.at(-1)).toEqual(listRequest(2, 10));
   });
 
   it('al borrar el último producto de la página retrocede una página', async () => {
@@ -226,7 +280,7 @@ describe('ProductsStore', () => {
 
     expect(repository.removeCalls).toEqual(['last']);
     expect(store.page()).toBe(2);
-    expect(repository.listCalls.at(-1)).toEqual({ page: 2, size: 10 });
+    expect(repository.listCalls.at(-1)).toEqual(listRequest(2, 10));
     expect(store.items()).toHaveLength(1);
   });
 
@@ -240,7 +294,30 @@ describe('ProductsStore', () => {
     await store.remove('a');
 
     expect(store.page()).toBe(2);
-    expect(repository.listCalls.at(-1)).toEqual({ page: 2, size: 10 });
+    expect(repository.listCalls.at(-1)).toEqual(listRequest(2, 10));
+  });
+
+  it('al retroceder de página conserva los filtros aplicados', async () => {
+    const filters: ProductFilters = { ...NO_PRODUCT_FILTERS, search: 'cafe' };
+    let deleted = false;
+    repository.listHandler = async (page) => {
+      if (page.page === 2) {
+        return deleted
+          ? pageOf([], { page: 2, size: 10, total: 10 })
+          : pageOf([product('last')], { page: 2, size: 10, total: 11 });
+      }
+      return pageOf([product('prev')], { page: 1, size: 10, total: 10 });
+    };
+
+    store.applyQuery(2, 10, filters);
+    await vi.waitFor(() => expect(store.items()).toHaveLength(1));
+
+    deleted = true;
+    await store.remove('last');
+
+    expect(store.page()).toBe(1);
+    // Sin los filtros, retroceder mostraría un listado distinto al pedido.
+    expect(repository.listCalls.at(-1)).toEqual(listRequest(1, 10, filters));
   });
 
   it('un error de carga deja estado de error y mensaje amigable, sin items', async () => {

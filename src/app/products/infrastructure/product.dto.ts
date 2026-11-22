@@ -1,5 +1,7 @@
 /** Contrato crudo de `/products`. Solo lo usa `infrastructure`. */
 
+import type { ProductSort } from '../domain/product-filters';
+
 export interface ProductDto {
   readonly id: string;
   readonly sku: string;
@@ -25,10 +27,19 @@ export interface PaginatedProductsDto {
   readonly meta: PageMetaDto;
 }
 
-/** `size` de la UI viaja como `limit`; el backend no acepta otro nombre. */
+/**
+ * `size` de la UI viaja como `limit`; el backend no acepta otro nombre.
+ * El query es estricto (`unrecognized_keys` → 400): los filtros sin valor se
+ * omiten, nunca se envían vacíos.
+ */
 export interface ListProductsQueryDto {
   readonly page: number;
   readonly limit: number;
+  readonly search?: string;
+  readonly category?: string;
+  readonly minPrice?: number;
+  readonly maxPrice?: number;
+  readonly sort: ProductSort;
 }
 
 /**

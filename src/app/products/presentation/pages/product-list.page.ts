@@ -7,9 +7,17 @@ import { asAppError } from '../../../core/http/app-error';
 import { Notifier } from '../../../core/notifications/notifier';
 import { ButtonDirective } from '../../../shared/ui/button/button.directive';
 import { ProductsStore } from '../../application/products.store';
-import { normalizePage, normalizePageSize } from '../../domain/page';
+import { DEFAULT_PAGE, normalizePage, normalizePageSize } from '../../domain/page';
 import type { Product } from '../../domain/product';
+import {
+  NO_PRODUCT_FILTERS,
+  compactParams,
+  filtersFromQuery,
+  filtersToQueryParams,
+  type ProductFilters,
+} from '../../domain/product-filters';
 import { ConfirmDeleteDialog } from '../components/confirm-delete-dialog';
+import { ProductFiltersBar } from '../components/product-filters';
 import { ProductsTable } from '../components/products-table';
 
 /**
@@ -18,7 +26,7 @@ import { ProductsTable } from '../components/products-table';
  */
 @Component({
   selector: 'app-product-list-page',
-  imports: [NgIcon, ButtonDirective, ProductsTable],
+  imports: [NgIcon, ButtonDirective, ProductsTable, ProductFiltersBar],
   viewProviders: [provideIcons({ lucidePlus })],
   template: `
     <div class="space-y-6">
@@ -28,7 +36,11 @@ import { ProductsTable } from '../components/products-table';
           <p class="text-muted-foreground mt-1 text-sm">
             @if (store.total() > 0) {
               {{ store.total() }}
-              {{ store.total() === 1 ? 'producto' : 'productos' }} en el catálogo
+              @if (store.hasFilters()) {
+                {{ store.total() === 1 ? 'resultado' : 'resultados' }}
+              } @else {
+                {{ store.total() === 1 ? 'producto' : 'productos' }} en el catálogo
+              }
             } @else {
               Alta, edición y baja de productos
             }
@@ -41,6 +53,11 @@ import { ProductsTable } from '../components/products-table';
         </button>
       </header>
 
+      <app-product-filters
+        [filters]="store.filters()"
+        (filtersChange)="onFiltersChange($event)"
+      />
+
       <app-products-table
         [items]="store.items()"
         [page]="store.page()"
@@ -49,12 +66,14 @@ import { ProductsTable } from '../components/products-table';
         [totalPages]="store.totalPages()"
         [status]="store.status()"
         [error]="store.error()"
+        [hasFilters]="store.hasFilters()"
         (pageChange)="onPageChange($event)"
         (pageSizeChange)="onPageSizeChange($event)"
         (edit)="edit($event)"
         (remove)="remove($event)"
         (retry)="store.retry()"
         (createRequested)="create()"
+        (clearFilters)="onClearFilters()"
       />
     </div>
   `,
@@ -73,13 +92,14 @@ export class ProductListPage {
 
   constructor() {
     // Única dirección: URL -> store. Así el estado es compartible y sobrevive al
-    // refresh. La paginación nunca escribe el store antes que la URL, que es lo
-    // que provocaba carreras entre el eco del router y la carga.
+    // refresh. La paginación y los filtros nunca escriben el store antes que la
+    // URL, que es lo que provocaba carreras entre el eco del router y la carga.
     effect(() => {
       const params = this.queryParams();
       this.store.applyQuery(
         normalizePage(params.get('page')),
         normalizePageSize(params.get('size')),
+        filtersFromQuery(params),
       );
     });
   }
@@ -89,16 +109,25 @@ export class ProductListPage {
   }
 
   protected onPageSizeChange(size: number): void {
-    this.navigate(1, size);
+    this.navigate(DEFAULT_PAGE, size);
+  }
+
+  /** Un filtro nuevo invalida la página actual: el listado vuelve a la 1. */
+  protected onFiltersChange(filters: ProductFilters): void {
+    this.navigate(DEFAULT_PAGE, this.store.pageSize(), filters);
+  }
+
+  protected onClearFilters(): void {
+    this.navigate(DEFAULT_PAGE, this.store.pageSize(), NO_PRODUCT_FILTERS);
   }
 
   protected create(): void {
-    void this.router.navigate(['/products', 'new'], { queryParams: this.currentPaging() });
+    void this.router.navigate(['/products', 'new'], { queryParams: this.currentQuery() });
   }
 
   protected edit(product: Product): void {
     void this.router.navigate(['/products', product.id, 'edit'], {
-      queryParams: this.currentPaging(),
+      queryParams: this.currentQuery(),
     });
   }
 
@@ -123,16 +152,21 @@ export class ProductListPage {
     }
   }
 
-  private navigate(page: number, size: number): void {
+  private navigate(page: number, size: number, filters: ProductFilters = this.store.filters()): void {
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { page, size },
+      // `null` borra la clave: un filtro retirado no debe quedarse en la URL.
+      queryParams: { page, size, ...filtersToQueryParams(filters) },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
   }
 
-  private currentPaging(): Record<string, string> {
-    return { page: String(this.store.page()), size: String(this.store.pageSize()) };
+  private currentQuery(): Record<string, string> {
+    return {
+      page: String(this.store.page()),
+      size: String(this.store.pageSize()),
+      ...compactParams(filtersToQueryParams(this.store.filters())),
+    };
   }
 }

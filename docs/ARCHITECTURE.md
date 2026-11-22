@@ -55,7 +55,7 @@ abiertos; manda el backend:
 
 | Acción | Método y ruta | Respuesta |
 |---|---|---|
-| Listar | `GET /products?page&limit` | `{ data: Product[], meta: { page, limit, total, totalPages } }` |
+| Listar | `GET /products?page&limit&search&category&minPrice&maxPrice&sort` | `{ data: Product[], meta: { page, limit, total, totalPages } }` |
 | Detalle | `GET /products/:id` | `Product` |
 | Crear | `POST /products` | `201 Product` |
 | Editar | `PATCH /products/:id` | `200 Product` |
@@ -66,19 +66,44 @@ El mapper también cubre dos bordes del contrato: `description` y `category` se
 **omiten** cuando están vacíos (la API es estricta y no acepta `null`), y
 `totalPages: 0` del catálogo vacío se normaliza a 1.
 
+### Filtros del listado
+
+La API acepta `search`, `category`, `minPrice`, `maxPrice` y `sort`. La UI los
+expone todos en una barra sobre la tabla y los lleva a la URL (`?search=&category=&minPrice=&maxPrice=&sort=`),
+así que un listado filtrado es compartible y sobrevive al refresh.
+
+| Borde del backend | Cómo lo absorbe el frontend |
+|---|---|
+| Zod estricto: `search=` vacío o un param desconocido responden **400** | "Sin filtro" es `null` y `toListQuery` omite la clave; nunca viaja un valor vacío |
+| `search` es parcial e insensible a mayúsculas, **solo sobre `name`** | La etiqueta dice «Buscar por nombre»; SKU y descripción no se buscan |
+| `category` compara el valor completo, **sin distinguir mayúsculas ni acentos** (collation `es` fuerza 1 en el backend) | El campo avisa con un ejemplo y un `title`: «semillas» encuentra también «Semillas» y «Tecnología» agrupa «tecnologia» |
+| `minPrice` > `maxPrice` no se valida: responde `total: 0` | La barra avisa antes de enviar y el estado vacío explica el porqué |
+| `sort` es un enum con default `-createdAt` | `normalizeSort` cae al default ante cualquier valor de la URL; el default no ensucia la URL |
+
+Los textos se aplican al enviar (Enter o «Buscar»), no en cada tecla: una
+petición por carácter no aporta nada y el valor del control competiría con el eco
+de la URL. Cambiar cualquier filtro vuelve a la página 1.
+
+La comparación de categoría sin mayúsculas ni acentos la resuelve el backend con
+collation (`CROPER_BACKEND`, `productCollation`); con la versión anterior de la API
+`Semillas` devolvía 0. El frontend envía el texto tal cual: aquí no se normaliza el
+valor, porque el contrato manda.
+
 ## Estado
 
 ```ts
-{ items, page, pageSize, total, status: 'idle' | 'loading' | 'saving' | 'error', error }
+{ items, page, pageSize, filters, total, status: 'idle' | 'loading' | 'saving' | 'error', error }
 ```
 
-Computed: `totalPages`, `isEmpty`, `isLoading`, `isSaving`, `hasError`. Extensión
-documentada: `selected` + `loadOne()` para la página de edición, de modo que
-`presentation` no toque el repositorio.
+Computed: `totalPages`, `isEmpty`, `isLoading`, `isSaving`, `hasError`, `hasFilters`.
+Extensión documentada: `selected` + `loadOne()` para la página de edición, de modo
+que `presentation` no toque el repositorio.
 
-- La página y el tamaño viven en la URL; la tabla navega y el store solo reacciona.
-- Tras crear, editar o eliminar se recarga la página actual. Si el borrado la deja
-  fuera de rango, se salta a la última página real en un solo paso.
+- La página, el tamaño y los filtros viven en la URL; la barra y la tabla navegan
+  y el store solo reacciona.
+- Tras crear, editar o eliminar se recarga con la página y los filtros activos. Si
+  el borrado deja la página fuera de rango, se salta a la última página real en un
+  solo paso, también con los filtros.
 - `normalizePageSize` solo acepta 10/20/50: un `?size=37` dejaría al selector sin
   opción y mostraría un valor distinto al que devuelve la API.
 
@@ -108,6 +133,9 @@ error de acción → toast; validación → campo.
 
 ## UI
 
+- **Filtros**: barra sobre la tabla con búsqueda por nombre, categoría exacta, rango
+  de precio y orden. Se aplican al enviar (Enter o «Buscar»), los desplegables al
+  cambiar, y «Limpiar (n)» retira todo. Cambiar un filtro vuelve a la página 1.
 - **Desktop**: tabla con cabecera sticky dentro de su propia área de scroll y alto
   fijo, así cambiar de página no mueve la paginación.
 - **Móvil**: cada fila es una tarjeta y la paginación se compacta a
@@ -121,13 +149,15 @@ error de acción → toast; validación → campo.
 
 ## Testing
 
-Cuatro archivos, elegidos por riesgo:
+Seis archivos, elegidos por riesgo:
 
 | Archivo | Qué protege |
 |---|---|
 | `domain/product-rules.spec.ts` | SKU, precio (2 decimales), stock, opcionales y normalización |
-| `infrastructure/product.mapper.spec.ts` | Contrato: `size`→`limit`, `meta`, opcionales omitidos |
-| `application/products.store.spec.ts` | Paginación, recarga tras mutaciones, retroceso, errores |
+| `domain/product-filters.spec.ts` | Filtros: normalización de la URL, rango inválido y params que se omiten |
+| `presentation/components/product-filters.spec.ts` | La barra: borradores, textos normalizados al enviar, orden inmediato y limpiar |
+| `infrastructure/product.mapper.spec.ts` | Contrato: `size`→`limit`, filtros opcionales, `meta`, opcionales omitidos |
+| `application/products.store.spec.ts` | Paginación, filtros, recarga tras mutaciones, retroceso, errores |
 | `core/http/app-error.spec.ts` | Mapeo status → mensaje y errores de campo |
 
 El store se prueba con un repositorio falso: sin `HttpClient` ni red. **No** se
@@ -139,7 +169,8 @@ repositorio HTTP y el wiring se verifican a mano en el navegador contra la API r
 
 | Límite | Disparador para resolverlo |
 |---|---|
-| La UI no expone búsqueda, filtros ni orden (la API los soporta) | Cuando el catálogo crezca y la paginación no alcance |
+| `category` exige el valor completo («semilla» no encuentra «semillas») y no hay forma de enumerar las categorías existentes | Si se vuelve cotidiano: exponer `GET /products/categories` y convertir el campo en desplegable |
+| La búsqueda solo cubre `name` (la API no busca por SKU ni descripción) | Si el equipo busca por SKU a diario → ampliar el filtro del backend a un índice de texto |
 | Paginación por offset, heredada de la API | Volumen o páginas profundas → keyset en el backend |
 | Token en `localStorage` | Si se exige mitigar XSS → cookie `httpOnly` (cambio en ambos lados) |
 | `three.js` (~116 kB gzip) en `/login` | Si el peso importa: retirar la escena y quedarse el degradado |
